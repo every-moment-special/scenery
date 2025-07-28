@@ -69,8 +69,14 @@ class CharacterGenerator {
             invisibleTransparent = false,
             replaceLightest = false,
             useTrueColor = false,
-            trueColorChar = ' '
+            trueColorChar = ' ',
+            useHalfBlocks = true
         } = options;
+        
+        // Use half block method if requested
+        if (useHalfBlocks) {
+            return this.imageToHalfBlockData(image, options);
+        }
         
         const characterData = [];
         const height = image.bitmap.height;
@@ -146,6 +152,243 @@ class CharacterGenerator {
         return characterData;
     }
 
+    // Convert image to half block character data for 32x32 -> 16 lines optimization
+    imageToHalfBlockData(image, options = {}) {
+        const {
+            transparencyThreshold = 128,
+            transparentChar = ' ',
+            invert = false,
+            invisibleTransparent = false,
+            useTrueColor = false,
+            trueColorChar = ' '
+        } = options;
+        
+        const characterData = [];
+        const height = image.bitmap.height;
+        const width = image.bitmap.width;
+        
+        // Process rows in pairs for half blocks (32x32 -> 16 lines)
+        for (let y = 0; y < height - 1; y += 2) {
+            let line = '';
+            for (let x = 0; x < width; x++) {
+                // Get upper and lower pixel colors
+                const upperPixel = image.getPixelColor(x, y);
+                const lowerPixel = image.getPixelColor(x, y + 1);
+                
+                const upperA = (upperPixel >> 24) & 255;
+                const upperR = (upperPixel >> 16) & 255;
+                const upperG = (upperPixel >> 8) & 255;
+                const upperB = upperPixel & 255;
+                
+                const lowerA = (lowerPixel >> 24) & 255;
+                const lowerR = (lowerPixel >> 16) & 255;
+                const lowerG = (lowerPixel >> 8) & 255;
+                const lowerB = lowerPixel & 255;
+                
+                // Check if both pixels are transparent
+                if (upperA < transparencyThreshold && lowerA < transparencyThreshold) {
+                    if (invisibleTransparent) {
+                        line += '\u200B'; // Zero-width space
+                    } else {
+                        line += transparentChar;
+                    }
+                } else {
+                    if (useTrueColor) {
+                        // Use true color with half blocks
+                        let char = ' '; // Default to space
+                        
+                        // Improved character selection for half blocks
+                        if (upperA >= transparencyThreshold && lowerA >= transparencyThreshold) {
+                            // Both pixels visible - use weighted selection
+                            const upperBrightness = (upperR + upperG + upperB) / 3;
+                            const lowerBrightness = (lowerR + lowerG + lowerB) / 3;
+                            
+                            // Use the more prominent pixel for character selection
+                            if (upperBrightness > lowerBrightness) {
+                                char = '▀'; // Upper half block if upper is brighter
+                            } else if (lowerBrightness > upperBrightness) {
+                                char = '▄'; // Lower half block if lower is brighter
+                            } else {
+                                char = '█'; // Full block if equal brightness
+                            }
+                        } else if (upperA >= transparencyThreshold && lowerA < transparencyThreshold) {
+                            // Only upper pixel visible - upper half block
+                            char = '▀';
+                        } else if (upperA < transparencyThreshold && lowerA >= transparencyThreshold) {
+                            // Only lower pixel visible - lower half block
+                            char = '▄';
+                        } else {
+                            // Both transparent (shouldn't happen due to check above)
+                            char = ' ';
+                        }
+                        
+                        // Improved color handling for half blocks
+                        let r, g, b;
+                        let useUpperColor = false;
+                        let useLowerColor = false;
+                        
+                        if (upperA >= transparencyThreshold && lowerA >= transparencyThreshold) {
+                            // Both pixels visible - use weighted color selection
+                            const upperBrightness = (upperR + upperG + upperB) / 3;
+                            const lowerBrightness = (lowerR + lowerG + lowerB) / 3;
+                            
+                            // Use the more prominent color (higher brightness or saturation)
+                            const upperSaturation = Math.max(upperR, upperG, upperB) - Math.min(upperR, upperG, upperB);
+                            const lowerSaturation = Math.max(lowerR, lowerG, lowerB) - Math.min(lowerR, lowerG, lowerB);
+                            
+                            // Enhanced color selection: prefer more saturated or brighter colors
+                            const upperWeight = upperSaturation + upperBrightness;
+                            const lowerWeight = lowerSaturation + lowerBrightness;
+                            
+                            if (upperWeight > lowerWeight) {
+                                // Use upper color if it's more prominent
+                                r = upperR;
+                                g = upperG;
+                                b = upperB;
+                                useUpperColor = true;
+                            } else {
+                                // Use lower color
+                                r = lowerR;
+                                g = lowerG;
+                                b = lowerB;
+                                useLowerColor = true;
+                            }
+                        } else if (upperA >= transparencyThreshold) {
+                            // Only upper visible
+                            r = upperR;
+                            g = upperG;
+                            b = upperB;
+                            useUpperColor = true;
+                        } else if (lowerA >= transparencyThreshold) {
+                            // Only lower visible
+                            r = lowerR;
+                            g = lowerG;
+                            b = lowerB;
+                            useLowerColor = true;
+                        } else {
+                            // Both transparent (shouldn't happen)
+                            r = 0;
+                            g = 0;
+                            b = 0;
+                        }
+
+                        // transparent character
+                        // if (r == 0 && g == 255 && b == 0) {
+                        //     line += ' ';
+                        //     continue;
+                        // }
+                        
+                        const colorCode = `\x1b[48;2;${r};${g};${b}m`;
+                        const resetCode = '\x1b[0m';
+                        line += `${colorCode}${char}${resetCode}`;
+                    } else {
+                        // ASCII mode with half blocks
+                        let char = ' ';
+                        
+                        const upperBrightness = (upperR + upperG + upperB) / 3;
+                        const lowerBrightness = (lowerR + lowerG + lowerB) / 3;
+                        
+                        // Improved character selection for ASCII mode
+                        if (upperA >= transparencyThreshold && lowerA >= transparencyThreshold) {
+                            // Both pixels visible - use weighted selection
+                            if (upperBrightness > lowerBrightness) {
+                                char = '▀'; // Upper half block if upper is brighter
+                            } else if (lowerBrightness > upperBrightness) {
+                                char = '▄'; // Lower half block if lower is brighter
+                            } else {
+                                // Equal brightness - use average for shading
+                                const avgBrightness = (upperBrightness + lowerBrightness) / 2;
+                                if (avgBrightness < 64) {
+                                    char = '█'; // Full block for dark areas
+                                } else if (avgBrightness < 128) {
+                                    char = '▓'; // Dark shade
+                                } else if (avgBrightness < 192) {
+                                    char = '▒'; // Medium shade
+                                } else {
+                                    char = '░'; // Light shade
+                                }
+                            }
+                        } else if (upperA >= transparencyThreshold && lowerA < transparencyThreshold) {
+                            // Only upper pixel visible
+                            if (upperBrightness < 128) {
+                                char = '▀'; // Upper half block
+                            } else {
+                                char = '▔'; // Upper eighth block
+                            }
+                        } else if (upperA < transparencyThreshold && lowerA >= transparencyThreshold) {
+                            // Only lower pixel visible
+                            if (lowerBrightness < 128) {
+                                char = '▄'; // Lower half block
+                            } else {
+                                char = '▁'; // Lower eighth block
+                            }
+                        }
+                        
+                        // Invert if requested
+                        if (invert) {
+                            const invertMap = {
+                                '█': ' ',
+                                '▓': '░',
+                                '▒': '▒',
+                                '░': '▓',
+                                '▀': '▄',
+                                '▄': '▀',
+                                '▔': '▁',
+                                '▁': '▔',
+                                ' ': '█'
+                            };
+                            char = invertMap[char] || char;
+                        }
+                        
+                        line += char;
+                    }
+                }
+            }
+            characterData.push(line);
+        }
+        
+        // Handle odd height images by adding a final row with just upper half blocks
+        if (height % 2 === 1) {
+            let line = '';
+            const y = height - 1;
+            for (let x = 0; x < width; x++) {
+                const pixelColor = image.getPixelColor(x, y);
+                const a = (pixelColor >> 24) & 255;
+                const r = (pixelColor >> 16) & 255;
+                const g = (pixelColor >> 8) & 255;
+                const b = pixelColor & 255;
+                
+                if (a < transparencyThreshold) {
+                    if (invisibleTransparent) {
+                        line += '\u200B';
+                    } else {
+                        line += transparentChar;
+                    }
+                } else {
+                    if (useTrueColor) {
+                        let char = '▀'; // Upper half block for single pixel
+                        
+                        const colorCode = `\x1b[48;2;${r};${g};${b}m`;
+                        const resetCode = '\x1b[0m';
+                        line += `${colorCode}${char}${resetCode}`;
+                    } else {
+                        const brightness = (r + g + b) / 3;
+                        let char = brightness < 128 ? '▀' : '▔';
+                        
+                        if (invert) {
+                            char = char === '▀' ? '▄' : '▁';
+                        }
+                        
+                        line += char;
+                    }
+                }
+            }
+            characterData.push(line);
+        }
+        
+        return characterData;
+    }
+
     // Display character
     displayCharacter(characterData) {
         term.clear();
@@ -199,12 +442,14 @@ module.exports = characterData;
                 { name: 'true-color-default', threshold: 128, char: ' ', useTrueColor: true, trueColorChar: ' ' },
                 { name: 'true-color-block', threshold: 128, char: ' ', useTrueColor: true, trueColorChar: '█' },
                 { name: 'true-color-dot', threshold: 128, char: ' ', useTrueColor: true, trueColorChar: '·' },
+                { name: 'true-color-half-blocks', threshold: 128, char: ' ', useTrueColor: true, trueColorChar: ' ', useHalfBlocks: true },
                 { name: 'ascii-strict', threshold: 200, char: ' ' },
                 { name: 'ascii-normal', threshold: 128, char: ' ' },
                 { name: 'ascii-loose', threshold: 64, char: ' ' },
                 { name: 'ascii-inverted', threshold: 128, char: ' ', invert: true },
                 { name: 'ascii-invisible', threshold: 128, char: ' ', invisibleTransparent: true },
-                { name: 'ascii-lightest-replaced', threshold: 128, char: ' ', replaceLightest: true }
+                { name: 'ascii-lightest-replaced', threshold: 128, char: ' ', replaceLightest: true },
+                { name: 'ascii-half-blocks', threshold: 128, char: ' ', useHalfBlocks: true }
             ];
             
             const characterSet = {};
@@ -220,7 +465,8 @@ module.exports = characterData;
                         invert: setting.invert || false,
                         invisibleTransparent: setting.invisibleTransparent || false,
                         replaceLightest: setting.replaceLightest || false,
-                        useTrueColor: setting.useTrueColor || false
+                        useTrueColor: setting.useTrueColor || false,
+                        useHalfBlocks: setting.useHalfBlocks || true
                     };
                     
                     const characterData = this.imageToCharacterData(resizedImage, options);
@@ -386,12 +632,14 @@ async function main() {
         console.log('  --true-color - Use true color ANSI codes instead of ASCII characters');
         console.log('  --true-color-char <char> - Character to use for true color (default: space)');
         console.log('  --no-true-color - Disable true color (use ASCII characters)');
+        console.log('  --half-blocks - Use half block optimization for 32x32 images (reduces 32 lines to 16)');
         console.log('');
         console.log('Examples:');
         console.log('  node generate.js character.png');
         console.log('  node generate.js character.png set');
         console.log('  node generate.js character.png custom --threshold 100 --size 24');
         console.log('  node generate.js character.png custom --no-true-color');
+        console.log('  node generate.js character.png custom --half-blocks');
         process.exit(1);
     }
     
@@ -443,6 +691,10 @@ async function main() {
                     break;
                 case '--true-color-char':
                     options.trueColorChar = value;
+                    break;
+                case '--half-blocks':
+                    options.useHalfBlocks = true;
+                    i--; // Don't skip next argument
                     break;
             }
         }
