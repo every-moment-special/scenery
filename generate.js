@@ -112,6 +112,13 @@ class CharacterGenerator {
                         
                         const colorCode = `\x1b[48;2;${r};${g};${b}m`;
                         const resetCode = '\x1b[0m';
+
+                        // transparent character
+                        // if (r == 0 && g == 255 && b == 0) {
+                        //     line += ' ';
+                        //     continue;
+                        // }
+
                         line += `${colorCode}${char}${resetCode}`; // Colored character
                     } else {
                         const brightness = (r + g + b) / 3;
@@ -233,7 +240,7 @@ module.exports = characterData;
     displayCharacterSet(characterSet) {
         term.clear();
         term.moveTo(1, 1);
-        term('🎮 Character Set Generated\n\n');
+        term('Character Set Generated\n\n');
         
         Object.entries(characterSet).forEach(([size, variations]) => {
             term(`${size}x${size} Characters:\n`);
