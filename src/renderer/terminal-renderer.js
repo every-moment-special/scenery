@@ -105,7 +105,7 @@ class TerminalRenderer {
         this.term.moveTo(1, height - 2);
         
         // Uncomment for debugging info
-        // this.term(`Position: (${info.x}, ${info.y}) | Direction: ${info.direction.toUpperCase()} | Frame: ${info.frame} | Moving: ${info.isMoving ? 'Yes' : 'No'}\n`);
+        // this.term(`Position: (${info.x}, ${info.y}) | Direction: ${info.direction.toUpperCase()} | Frame: ${info.frame} | Moving: ${info.isMoving ? 'Yes' : 'No'} | NPCs: ${info.npcCount || 0}\n`);
         // this.term('Use arrow keys to move, Q to quit\n');
     }
 

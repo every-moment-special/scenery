@@ -3,14 +3,19 @@
 
 const { CharacterAnimation, ANIMATION_CONFIG } = require('../animations/character');
 const TerminalRenderer = require('../renderer/terminal-renderer');
+const ImprovedBufferedRenderer = require('../renderer/improved-buffered-renderer');
 const MovementController = require('../controllers/movement-controller');
+const { NPCManager } = require('./npc-manager');
 
 class GameLoop {
     constructor() {
         // Initialize game systems
         this.animationManager = new CharacterAnimation();
-        this.renderer = new TerminalRenderer();
+        this.terminalRenderer = new TerminalRenderer();
+        this.bufferedRenderer = new ImprovedBufferedRenderer(this.terminalRenderer);
+        this.renderer = this.bufferedRenderer; // Use improved buffered renderer as main renderer
         this.movementController = new MovementController(this.animationManager, this.renderer);
+        this.npcManager = new NPCManager();
         
         // Game state
         this.isRunning = false;
@@ -21,6 +26,9 @@ class GameLoop {
         // Bind methods
         this.update = this.update.bind(this);
         this.render = this.render.bind(this);
+        
+        // Initialize NPCs
+        this.initializeNPCs();
     }
 
     // Start the game loop
@@ -34,6 +42,7 @@ class GameLoop {
     stop() {
         this.isRunning = false;
         this.movementController.cleanup();
+        this.bufferedRenderer.cleanup();
     }
 
     // Main game loop
@@ -53,6 +62,14 @@ class GameLoop {
         setTimeout(() => this.gameLoop(), 1);
     }
 
+    // Initialize NPCs
+    initializeNPCs() {
+        // Add some elk NPCs at different positions
+        this.npcManager.addNPC('elk', 20, 8);
+        this.npcManager.addNPC('elk', 35, 12);
+        this.npcManager.addNPC('elk', 15, 15);
+    }
+
     // Update game state
     update(currentTime) {
         // Update movement
@@ -60,6 +77,9 @@ class GameLoop {
         
         // Update animation
         this.animationManager.updateFrame(currentTime);
+        
+        // Update NPCs
+        this.npcManager.update(currentTime);
     }
 
     // Render the game
@@ -76,8 +96,11 @@ class GameLoop {
             ANIMATION_CONFIG.SPRITE_HEIGHT
         );
         
-        // Render character at current position
-        this.renderer.renderSprite(position.x, position.y, currentSprite);
+        // Render character at current position (z-index 2 - highest priority)
+        this.renderer.renderSprite(position.x, position.y, currentSprite, 2);
+        
+        // Render all NPCs
+        this.renderNPCs();
         
         // Display UI
         this.renderer.displayUI({
@@ -85,8 +108,33 @@ class GameLoop {
             y: position.y,
             direction: animationInfo.direction,
             frame: animationInfo.frame,
-            isMoving: animationInfo.isMoving
+            isMoving: animationInfo.isMoving,
+            npcCount: this.npcManager.getNPCCount()
         });
+        
+        // Render the buffer to terminal
+        this.bufferedRenderer.render();
+    }
+    
+    // Render all NPCs
+    renderNPCs() {
+        const npcs = this.npcManager.getAllNPCs();
+        
+        for (const npc of npcs) {
+            const position = npc.getPosition();
+            const sprite = npc.getCurrentSprite();
+            
+            // Clear previous NPC position
+            this.renderer.clearArea(
+                position.x,
+                position.y,
+                32, // NPC sprite width
+                22  // NPC sprite height
+            );
+            
+            // Render NPC (z-index 1 - background)
+            this.renderer.renderSprite(position.x, position.y, sprite, 1);
+        }
     }
 
     // Get game state for debugging
@@ -95,6 +143,12 @@ class GameLoop {
             animation: this.animationManager.getAnimationInfo(),
             movement: this.movementController.getMovementInfo(),
             terminal: this.renderer.getTerminalInfo(),
+            npcs: this.npcManager.getAllNPCs().map(npc => ({
+                id: npc.id,
+                type: npc.type,
+                position: npc.getPosition(),
+                animation: npc.getAnimationInfo()
+            })),
             isRunning: this.isRunning
         };
     }
@@ -103,7 +157,10 @@ class GameLoop {
     reset() {
         this.animationManager.reset();
         this.movementController.reset();
-        this.renderer.clearScreen();
+        this.npcManager.clear();
+        this.initializeNPCs();
+        this.bufferedRenderer.clear();
+        this.bufferedRenderer.render();
     }
 }
 
