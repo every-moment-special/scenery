@@ -22,7 +22,6 @@ const right1Sprite = require('./src/assets/right1.js');
 const right2Sprite = require('./src/assets/right0.js');
 const right3Sprite = require('./src/assets/right2.js');
 
-console.log('Starting animated character movement with direction-based animations...');
 
 // Animation state
 let characterX = 10;
@@ -131,9 +130,9 @@ const animate = () => {
     
     // Display UI
     term.moveTo(1, height - 2);
-    term('Animated Character Movement with Direction-Based Animations\n');
-    term(`Position: (${characterX}, ${characterY}) | Direction: ${currentDirection.toUpperCase()} | Frame: ${animationFrame}/${directionSprites[currentDirection].length} | Moving: ${isMoving ? 'Yes' : 'No'}\n`);
-    term('Use arrow keys to move, Q to quit\n');
+    // term('Animated Character Movement with Direction-Based Animations\n');
+    // term(`Position: (${characterX}, ${characterY}) | Direction: ${currentDirection.toUpperCase()} | Frame: ${animationFrame}/${directionSprites[currentDirection].length} | Moving: ${isMoving ? 'Yes' : 'No'}\n`);
+    // term('Use arrow keys to move, Q to quit\n');
     
     setTimeout(animate, 50);
 };
