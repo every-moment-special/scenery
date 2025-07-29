@@ -33,8 +33,15 @@ let lastKeyPressTime = 0;
 let currentDirection = 'down'; // Default direction
 const animationSpeed = 200; // milliseconds between frame changes
 const movementTimeout = 150; // milliseconds to wait before stopping movement
-const width = process.stdout.columns || 80;
-const height = process.stdout.rows || 24;
+
+// Dynamic terminal dimensions
+function getTerminalWidth() {
+    return process.stdout.columns || 80;
+}
+
+function getTerminalHeight() {
+    return process.stdout.rows || 24;
+}
 
 // Direction-based animation sprites
 const directionSprites = {
@@ -48,6 +55,8 @@ const directionSprites = {
 function renderAnimatedCharacter(x, y, sprite) {
     const spriteHeight = sprite.length;
     const spriteWidth = sprite[0].length;
+    const width = getTerminalWidth();
+    const height = getTerminalHeight();
     
     // Build the complete sprite as a single string with proper positioning
     let spriteOutput = '';
@@ -86,6 +95,7 @@ function getCurrentSprite() {
 function clearCharacterArea(x, y) {
     const spriteHeight = down0Sprite.length; // Use any sprite for height reference
     const spriteWidth = down0Sprite[0].length; // Use any sprite for width reference
+    const height = getTerminalHeight();
     
     let clearOutput = '';
     for (let sy = 0; sy < spriteHeight; sy++) {
@@ -101,8 +111,46 @@ function clearCharacterArea(x, y) {
     }
 }
 
+// Function to constrain character position within current terminal bounds
+function constrainCharacterPosition() {
+    const width = getTerminalWidth();
+    const height = getTerminalHeight();
+    const spriteWidth = down0Sprite[0].length;
+    const spriteHeight = down0Sprite.length;
+    
+    // Constrain X position
+    characterX = Math.max(0, Math.min(width - spriteWidth, characterX));
+    
+    // Constrain Y position
+    characterY = Math.max(0, Math.min(height - spriteHeight - 3, characterY));
+}
+
+// Handle terminal resize
+function handleResize() {
+    const oldWidth = getTerminalWidth();
+    const oldHeight = getTerminalHeight();
+    
+    // Wait a moment for the resize to complete
+    setTimeout(() => {
+        const newWidth = getTerminalWidth();
+        const newHeight = getTerminalHeight();
+        
+        // If dimensions actually changed
+        if (oldWidth !== newWidth || oldHeight !== newHeight) {
+            // Constrain character position to new boundaries
+            constrainCharacterPosition();
+            
+            // Clear the entire screen and redraw
+            term.clear();
+        }
+    }, 100);
+}
+
 // Setup input handling
 term.grabInput();
+
+// Listen for terminal resize events
+process.stdout.on('resize', handleResize);
 
 const animate = () => {
     const currentTime = Date.now();
@@ -129,6 +177,7 @@ const animate = () => {
     renderAnimatedCharacter(characterX, characterY, currentSprite);
     
     // Display UI
+    const height = getTerminalHeight();
     term.moveTo(1, height - 2);
     // term('Animated Character Movement with Direction-Based Animations\n');
     // term(`Position: (${characterX}, ${characterY}) | Direction: ${currentDirection.toUpperCase()} | Frame: ${animationFrame}/${directionSprites[currentDirection].length} | Moving: ${isMoving ? 'Yes' : 'No'}\n`);
@@ -141,6 +190,8 @@ const animate = () => {
 term.on('key', (name) => {
     const oldX = characterX;
     const oldY = characterY;
+    const width = getTerminalWidth();
+    const height = getTerminalHeight();
     
     switch (name) {
         case 'LEFT':
