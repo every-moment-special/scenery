@@ -34,6 +34,13 @@ let currentDirection = 'down'; // Default direction
 const animationSpeed = 200; // milliseconds between frame changes
 const movementTimeout = 150; // milliseconds to wait before stopping movement
 
+// Key state tracking to handle continuous movement
+let pressedKeys = new Set();
+const movementSpeed = 100; // milliseconds between movement updates
+let lastMovementTime = 0;
+const keyReleaseTimeout = 500; // milliseconds before auto-releasing a key
+let keyTimeouts = new Map(); // Track timeouts for each key
+
 // Dynamic terminal dimensions
 function getTerminalWidth() {
     return process.stdout.columns || 80;
@@ -155,6 +162,44 @@ process.stdout.on('resize', handleResize);
 const animate = () => {
     const currentTime = Date.now();
     
+    // Handle continuous movement based on pressed keys
+    if (pressedKeys.size > 0 && currentTime - lastMovementTime > movementSpeed) {
+        const oldX = characterX;
+        const oldY = characterY;
+        const width = getTerminalWidth();
+        const height = getTerminalHeight();
+        
+        // Process movement for each pressed key
+        for (const key of pressedKeys) {
+            switch (key) {
+                case 'LEFT':
+                    characterX = Math.max(0, characterX - 2);
+                    currentDirection = 'left';
+                    break;
+                case 'RIGHT':
+                    characterX = Math.min(width - 32, characterX + 2);
+                    currentDirection = 'right';
+                    break;
+                case 'UP':
+                    characterY = Math.max(0, characterY - 1);
+                    currentDirection = 'up';
+                    break;
+                case 'DOWN':
+                    characterY = Math.min(height - 32, characterY + 1);
+                    currentDirection = 'down';
+                    break;
+            }
+        }
+        
+        // Update movement state
+        if (oldX !== characterX || oldY !== characterY) {
+            isMoving = true;
+            lastKeyPressTime = currentTime;
+        }
+        
+        lastMovementTime = currentTime;
+    }
+    
     // Check if movement should stop (no key press for a while)
     if (isMoving && currentTime - lastKeyPressTime > movementTimeout) {
         isMoving = false;
@@ -188,65 +233,48 @@ const animate = () => {
 
 // Handle keyboard input
 term.on('key', (name) => {
-    const oldX = characterX;
-    const oldY = characterY;
     const width = getTerminalWidth();
     const height = getTerminalHeight();
     
-    switch (name) {
-        case 'LEFT':
-            characterX = Math.max(0, characterX - 2);
-            currentDirection = 'left';
-            isMoving = true;
-            lastKeyPressTime = Date.now();
-            // Only reset animation timing if not already moving
-            if (!isMoving) {
-                lastMoveTime = Date.now() - animationSpeed; // Start animation immediately
+    // Handle movement keys
+    if (['LEFT', 'RIGHT', 'UP', 'DOWN'].includes(name)) {
+        // Clear any existing timeout for this key
+        if (keyTimeouts.has(name)) {
+            clearTimeout(keyTimeouts.get(name));
+        }
+        
+        // Add key to pressed keys set
+        pressedKeys.add(name);
+        
+        // Set a timeout to auto-release this key
+        const timeout = setTimeout(() => {
+            pressedKeys.delete(name);
+            keyTimeouts.delete(name);
+            
+            // If no keys are pressed, stop movement
+            if (pressedKeys.size === 0) {
+                isMoving = false;
+                animationFrame = 0;
             }
-            break;
-        case 'RIGHT':
-            characterX = Math.min(width - 32, characterX + 2);
-            currentDirection = 'right';
-            isMoving = true;
-            lastKeyPressTime = Date.now();
-            // Only reset animation timing if not already moving
-            if (!isMoving) {
-                lastMoveTime = Date.now() - animationSpeed; // Start animation immediately
-            }
-            break;
-        case 'UP':
-            characterY = Math.max(0, characterY - 1);
-            currentDirection = 'up';
-            isMoving = true;
-            lastKeyPressTime = Date.now();
-            // Only reset animation timing if not already moving
-            if (!isMoving) {
-                lastMoveTime = Date.now() - animationSpeed; // Start animation immediately
-            }
-            break;
-        case 'DOWN':
-            characterY = Math.min(height - 32, characterY + 1);
-            currentDirection = 'down';
-            isMoving = true;
-            lastKeyPressTime = Date.now();
-            // Only reset animation timing if not already moving
-            if (!isMoving) {
-                lastMoveTime = Date.now() - animationSpeed; // Start animation immediately
-            }
-            break;
-        case 'q':
-        case 'Q':
-            term.removeAllListeners('key');
-            term.grabInput(false);
-            term.clear();
-            process.exit(0);
-            return;
+        }, keyReleaseTimeout);
+        
+        keyTimeouts.set(name, timeout);
+        
+        // Start movement immediately for the first press
+        if (pressedKeys.size === 1) {
+            lastMovementTime = Date.now() - movementSpeed; // Start movement immediately
+        }
     }
     
-    // Only reset movement state if no actual movement occurred (hit boundary)
-    if (oldX === characterX && oldY === characterY) {
-        isMoving = false;
-        animationFrame = 0;
+    // Handle quit
+    if (name === 'q' || name === 'Q') {
+        // Clear all timeouts
+        keyTimeouts.forEach(timeout => clearTimeout(timeout));
+        term.removeAllListeners('key');
+        term.grabInput(false);
+        term.clear();
+        process.exit(0);
+        return;
     }
 });
 
