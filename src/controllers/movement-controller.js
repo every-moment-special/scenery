@@ -171,4 +171,4 @@ class MovementController {
     }
 }
 
-module.exports = MovementController; 
+module.exports = MovementController;

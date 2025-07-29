@@ -107,4 +107,4 @@ class GameLoop {
     }
 }
 
-module.exports = GameLoop; 
+module.exports = GameLoop;

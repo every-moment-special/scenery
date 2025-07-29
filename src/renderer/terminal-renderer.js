@@ -134,4 +134,4 @@ class TerminalRenderer {
     }
 }
 
-module.exports = TerminalRenderer; 
+module.exports = TerminalRenderer;

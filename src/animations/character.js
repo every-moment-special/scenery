@@ -21,7 +21,7 @@ const right2Sprite = require('../assets/character/movement/right2.js');
 // Animation configuration
 const ANIMATION_CONFIG = {
     IDLE_FRAME: 0,
-    FRAME_COUNT: 3,
+    FRAME_COUNT: 4,
     ANIMATION_SPEED: 200, // milliseconds
     MOVEMENT_TIMEOUT: 150, // milliseconds
     SPRITE_WIDTH: 32,
@@ -30,10 +30,10 @@ const ANIMATION_CONFIG = {
 
 // Direction-based sprite collections
 const SPRITE_COLLECTIONS = {
-    up: [up0Sprite, up1Sprite, up2Sprite],
-    down: [down0Sprite, down1Sprite, down2Sprite],
-    left: [left0Sprite, left1Sprite, left2Sprite],
-    right: [right0Sprite, right1Sprite, right2Sprite]
+    up: [up0Sprite, up1Sprite, up0Sprite, up2Sprite],
+    down: [down0Sprite, down1Sprite, down0Sprite, down2Sprite],
+    left: [left0Sprite, left1Sprite, left0Sprite, left2Sprite],
+    right: [right0Sprite, right1Sprite, right0Sprite, right2Sprite]
 };
 
 // Animation states
