@@ -40,6 +40,14 @@ class ImprovedFrameBuffer {
     setSprite(x, y, sprite, z = 0) {
         if (!sprite || !Array.isArray(sprite)) return;
 
+        // Check if this is the new cell-based format
+        if (sprite.length > 0 && typeof sprite[0] === 'object' && sprite[0].hasOwnProperty('x')) {
+            // New cell-based format
+            this.setCellArray(x, y, sprite, z);
+            return;
+        }
+
+        // Legacy line-based format
         for (let spriteY = 0; spriteY < sprite.length; spriteY++) {
             const line = sprite[spriteY];
             let i = 0, screenX = x;
@@ -67,6 +75,23 @@ class ImprovedFrameBuffer {
                 }
             }
         }
+    }
+
+    // Set cell array (new format from updated generator)
+    setCellArray(offsetX, offsetY, cellArray, z = 0) {
+        if (!cellArray || !Array.isArray(cellArray)) return;
+
+        cellArray.forEach(cell => {
+            if (cell && typeof cell === 'object' && 
+                typeof cell.x === 'number' && typeof cell.y === 'number' &&
+                typeof cell.char === 'string' && typeof cell.ansi === 'string') {
+                
+                const screenX = offsetX + cell.x;
+                const screenY = offsetY + cell.y;
+                
+                this.setCell(screenX, screenY, cell.char, cell.ansi, z);
+            }
+        });
     }
 
     // Set text with optional ANSI color

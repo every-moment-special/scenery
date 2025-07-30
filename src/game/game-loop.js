@@ -66,8 +66,8 @@ class GameLoop {
     initializeNPCs() {
         // Add some elk NPCs at different positions
         this.npcManager.addNPC('elk', 20, 8);
-        this.npcManager.addNPC('elk', 35, 12);
-        this.npcManager.addNPC('elk', 15, 15);
+        // this.npcManager.addNPC('elk', 35, 12);
+        // this.npcManager.addNPC('elk', 15, 15);
     }
 
     // Update game state
