@@ -18,9 +18,12 @@ class ImprovedFrameBuffer {
         const key = this._key(x, y);
         const existing = this.buffer.get(key);
 
+        // Use explicit z-index if provided, otherwise use 0
+        const effectiveZ = z;
+
         // Replace only if new z-index is higher or same
-        if (!existing || z >= existing.z) {
-            this.buffer.set(key, { char, ansi, z });
+        if (!existing || effectiveZ >= existing.z) {
+            this.buffer.set(key, { char, ansi, z: effectiveZ });
         }
     }
 
@@ -65,7 +68,10 @@ class ImprovedFrameBuffer {
                     // Check if it's a visible character (Unicode block characters)
                     if (char === '▄' || char === '▀' || char === '█' || char === '▌' || char === '▐' || 
                         char === '░' || char === '▒' || char === '▓' || char === '▔' || char === '▕') {
-                        this.setCell(screenX, y + spriteY, char, currentAnsi, z);
+                        const screenY = y + spriteY;
+                        // Use explicit z-index if provided, otherwise use 0
+                        const effectiveZ = z;
+                        this.setCell(screenX, screenY, char, currentAnsi, effectiveZ);
                         screenX++;
                     } else if (char === ' ') {
                         // Skip spaces but advance position
@@ -89,7 +95,10 @@ class ImprovedFrameBuffer {
                 const screenX = offsetX + cell.x;
                 const screenY = offsetY + cell.y;
                 
-                this.setCell(screenX, screenY, cell.char, cell.ansi, z);
+                // Use explicit z-index if provided, otherwise use 0
+                const effectiveZ = z;
+                
+                this.setCell(screenX, screenY, cell.char, cell.ansi, effectiveZ);
             }
         });
     }
@@ -99,7 +108,9 @@ class ImprovedFrameBuffer {
         for (let i = 0; i < text.length; i++) {
             const charX = x + i;
             if (charX < this.width) {
-                this.setCell(charX, y, text[i], ansi, z);
+                // Use explicit z-index if provided, otherwise use 0
+                const effectiveZ = z;
+                this.setCell(charX, y, text[i], ansi, effectiveZ);
             }
         }
     }

@@ -88,21 +88,43 @@ class GameLoop {
         const currentSprite = this.animationManager.getCurrentSprite();
         const animationInfo = this.animationManager.getAnimationInfo();
         
-        // Clear previous character position
-        this.renderer.clearArea(
-            position.x, 
-            position.y, 
-            ANIMATION_CONFIG.SPRITE_WIDTH, 
-            ANIMATION_CONFIG.SPRITE_HEIGHT
-        );
+        // Get all NPCs
+        const npcs = this.npcManager.getAllNPCs();
         
-        // Render character at current position (z-index 2 - highest priority)
-        this.renderer.renderSprite(position.x, position.y, currentSprite, 2);
+        // Create a list of all entities to render (character + NPCs)
+        const entities = [
+            {
+                type: 'character',
+                position: position,
+                sprite: currentSprite,
+                y: position.y
+            },
+            ...npcs.map(npc => ({
+                type: 'npc',
+                position: npc.getPosition(),
+                sprite: npc.getCurrentSprite(),
+                y: npc.getPosition().y
+            }))
+        ];
         
-        // Render all NPCs
-        this.renderNPCs();
+        // Sort entities by y-position (lower y = rendered first/behind)
+        entities.sort((a, b) => a.y - b.y);
         
-        // Display UI
+        // Clear all previous positions
+        this.clearAllEntityPositions(entities);
+        
+        // Render entities in z-order (background to foreground)
+        entities.forEach((entity, index) => {
+            const zIndex = index + 1; // z-index 1, 2, 3, etc.
+            
+            if (entity.type === 'character') {
+                this.renderer.renderSprite(entity.position.x, entity.position.y, entity.sprite, zIndex);
+            } else if (entity.type === 'npc') {
+                this.renderer.renderSprite(entity.position.x, entity.position.y, entity.sprite, zIndex);
+            }
+        });
+        
+        // Display UI (highest z-index)
         this.renderer.displayUI({
             x: position.x,
             y: position.y,
@@ -116,25 +138,31 @@ class GameLoop {
         this.bufferedRenderer.render();
     }
     
-    // Render all NPCs
+    // Clear all entity positions
+    clearAllEntityPositions(entities) {
+        entities.forEach(entity => {
+            if (entity.type === 'character') {
+                this.renderer.clearArea(
+                    entity.position.x, 
+                    entity.position.y, 
+                    ANIMATION_CONFIG.SPRITE_WIDTH, 
+                    ANIMATION_CONFIG.SPRITE_HEIGHT
+                );
+            } else if (entity.type === 'npc') {
+                this.renderer.clearArea(
+                    entity.position.x,
+                    entity.position.y,
+                    32, // NPC sprite width
+                    22  // NPC sprite height
+                );
+            }
+        });
+    }
+    
+    // Render all NPCs (deprecated - now handled in main render method)
     renderNPCs() {
-        const npcs = this.npcManager.getAllNPCs();
-        
-        for (const npc of npcs) {
-            const position = npc.getPosition();
-            const sprite = npc.getCurrentSprite();
-            
-            // Clear previous NPC position
-            this.renderer.clearArea(
-                position.x,
-                position.y,
-                32, // NPC sprite width
-                22  // NPC sprite height
-            );
-            
-            // Render NPC (z-index 1 - background)
-            this.renderer.renderSprite(position.x, position.y, sprite, 1);
-        }
+        // This method is now deprecated as NPCs are rendered in the main render method
+        // with proper z-layering
     }
 
     // Get game state for debugging

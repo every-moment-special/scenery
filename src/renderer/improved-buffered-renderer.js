@@ -72,12 +72,12 @@ class ImprovedBufferedRenderer {
         // Clear UI area
         this.clearArea(0, uiY, this.currentBuffer.width, 2);
         
-        // Render UI text (z-index 3 - highest priority for UI)
+        // Render UI text (z-index 100 - highest priority for UI)
         const uiText = `Position: (${info.x}, ${info.y}) | Direction: ${info.direction.toUpperCase()} | Frame: ${info.frame} | Moving: ${info.isMoving ? 'Yes' : 'No'} | NPCs: ${info.npcCount || 0}`;
-        this.renderText(0, uiY, uiText, '', 3);
+        this.renderText(0, uiY, uiText, '', 100);
         
         const controlsText = 'Use arrow keys to move, Q to quit';
-        this.renderText(0, uiY + 1, controlsText, '', 3);
+        this.renderText(0, uiY + 1, controlsText, '', 100);
     }
 
     // Render the buffer to terminal
