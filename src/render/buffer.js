@@ -1,7 +1,7 @@
 // Improved Frame Buffer System
 // Based on the example with Map-based storage and proper ANSI parsing
 
-class ImprovedFrameBuffer {
+class Buffer {
     constructor(width, height) {
         this.width = width;
         this.height = height;
@@ -167,4 +167,4 @@ function renderDiff(current, previous, term) {
     return changes;
 }
 
-module.exports = { ImprovedFrameBuffer, renderDiff }; 
+module.exports = { Buffer, renderDiff }; 

@@ -1,5 +1,5 @@
 // Generated character data optimized for new buffer system
-// This format works efficiently with ImprovedFrameBuffer.setCell()
+// This format works efficiently with Buffer.setCell()
 const characterData = [
     { x: 3, y: 2, char: '▄', ansi: '[38;2;44;72;37m' },
     { x: 4, y: 2, char: '▄', ansi: '[38;2;44;72;37m' },

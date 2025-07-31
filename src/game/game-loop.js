@@ -2,8 +2,8 @@
 // Main game loop that coordinates all game systems
 
 const { CharacterAnimation, ANIMATION_CONFIG } = require('../animations/character');
-const TerminalRenderer = require('../renderer/terminal-renderer');
-const ImprovedBufferedRenderer = require('../renderer/improved-buffered-renderer');
+const TerminalRender = require('../render/terminal');
+const Render = require('../render/render');
 const MovementController = require('../controllers/movement-controller');
 const { NPCManager } = require('./npc-manager');
 
@@ -11,9 +11,9 @@ class GameLoop {
     constructor() {
         // Initialize game systems
         this.animationManager = new CharacterAnimation();
-        this.terminalRenderer = new TerminalRenderer();
-        this.bufferedRenderer = new ImprovedBufferedRenderer(this.terminalRenderer);
-        this.renderer = this.bufferedRenderer; // Use improved buffered renderer as main renderer
+        this.terminalRenderer = new TerminalRender();
+        this.bufferedRenderer = new Render(this.terminalRenderer);
+        this.renderer = this.bufferedRenderer;
         this.movementController = new MovementController(this.animationManager, this.renderer);
         this.npcManager = new NPCManager();
         

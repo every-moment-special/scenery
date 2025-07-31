@@ -4,7 +4,7 @@
 const termkit = require('terminal-kit');
 const term = termkit.terminal;
 
-class TerminalRenderer {
+class TerminalRender {
     constructor() {
         this.term = term;
         this.setupTerminal();
@@ -134,4 +134,4 @@ class TerminalRenderer {
     }
 }
 
-module.exports = TerminalRenderer;
+module.exports = TerminalRender;

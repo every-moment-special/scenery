@@ -300,7 +300,7 @@ class CharacterGenerator {
         
         // Create optimized format for new buffer system with individual cells
         const characterCode = `// Generated character data optimized for new buffer system
-// This format works efficiently with ImprovedFrameBuffer.setCell()
+// This format works efficiently with Buffer.setCell()
 const characterData = [
 ${characterData.map(cell => `    { x: ${cell.x}, y: ${cell.y}, char: '${cell.char}', ansi: '${cell.ansi}' },`).join('\n')}
 ];
@@ -313,7 +313,7 @@ module.exports = characterData;
         
         console.log(`Character data saved to: ${outputPath}`);
         console.log(`Generated ${characterData.length} cells optimized for new buffer system`);
-        console.log('Format works efficiently with ImprovedFrameBuffer.setCell()');
+        console.log('Format works efficiently with Buffer.setCell()');
     }
 }
 

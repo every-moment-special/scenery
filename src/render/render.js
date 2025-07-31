@@ -1,17 +1,17 @@
 // Improved Buffered Renderer
 // Uses Map-based frame buffer with proper ANSI parsing
 
-const { ImprovedFrameBuffer, renderDiff } = require('./improved-frame-buffer');
+const { Buffer, renderDiff } = require('./buffer');
 
-class ImprovedBufferedRenderer {
+class Render {
     constructor(terminalRenderer) {
         this.terminalRenderer = terminalRenderer;
         this.term = terminalRenderer.term;
         
         // Get terminal dimensions
         const dimensions = this.terminalRenderer.getTerminalInfo();
-        this.currentBuffer = new ImprovedFrameBuffer(dimensions.width, dimensions.height - 3);
-        this.previousBuffer = new ImprovedFrameBuffer(dimensions.width, dimensions.height - 3);
+        this.currentBuffer = new Buffer(dimensions.width, dimensions.height - 3);
+        this.previousBuffer = new Buffer(dimensions.width, dimensions.height - 3);
         
         this.isInitialized = true;
     }
@@ -19,8 +19,8 @@ class ImprovedBufferedRenderer {
     // Handle terminal resize
     handleResize() {
         const newDimensions = this.terminalRenderer.getTerminalInfo();
-        this.currentBuffer = new ImprovedFrameBuffer(newDimensions.width, newDimensions.height - 3);
-        this.previousBuffer = new ImprovedFrameBuffer(newDimensions.width, newDimensions.height - 3);
+        this.currentBuffer = new Buffer(newDimensions.width, newDimensions.height - 3);
+        this.previousBuffer = new Buffer(newDimensions.width, newDimensions.height - 3);
     }
 
     // Clear a rectangular area
@@ -151,4 +151,4 @@ class ImprovedBufferedRenderer {
     }
 }
 
-module.exports = ImprovedBufferedRenderer; 
+module.exports = Render; 
