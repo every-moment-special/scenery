@@ -2,17 +2,19 @@
 // Handles all terminal-specific rendering operations
 
 const termkit = require('terminal-kit');
-const term = termkit.terminal;
 
 class TerminalRender {
     constructor() {
-        this.term = term;
+        this.term = termkit.terminal;
         this.setupTerminal();
     }
 
     // Setup terminal for rendering
     setupTerminal() {
+        // Enable raw mode and grab input
         this.term.grabInput();
+        
+        // Set up resize handler
         process.stdout.on('resize', () => this.handleResize());
     }
 
@@ -111,11 +113,37 @@ class TerminalRender {
 
     // Setup input handling
     setupInputHandlers(handlers) {
+        // Remove any existing listeners
+        this.term.removeAllListeners('key');
+        
+        // Use the standard terminal-kit key event
         this.term.on('key', (name) => {
+            // console.log(`DEBUG: Terminal received key: "${name}"`);
             if (handlers.onKeyPress) {
                 handlers.onKeyPress(name);
             }
         });
+        
+        // Also try using the raw input method
+        this.term.on('input', (name) => {
+            // console.log(`DEBUG: Terminal received input: "${name}"`);
+            if (handlers.onKeyPress) {
+                handlers.onKeyPress(name);
+            }
+        });
+        
+        // Alternative: Use process.stdin for raw input
+        process.stdin.setRawMode(true);
+        process.stdin.resume();
+        process.stdin.on('data', (data) => {
+            const key = data.toString();
+            // console.log(`DEBUG: Process.stdin received: "${key}"`);
+            if (handlers.onKeyPress) {
+                handlers.onKeyPress(key);
+            }
+        });
+        
+        // console.log('DEBUG: Input handlers set up - listening for keys, input, and stdin');
     }
 
     // Cleanup terminal

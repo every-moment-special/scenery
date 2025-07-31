@@ -18,6 +18,12 @@ class MapManager {
             EMPTY: 'empty'
         };
         
+        // Performance optimizations
+        this.lastCameraPosition = { x: -1, y: -1 };
+        this.tileCache = new Map(); // Cache for rendered tile sprites
+        this.lastRenderTime = 0;
+        this.renderInterval = 100; // Only re-render map every 100ms
+        
         // Initialize with a default map
         this.initializeDefaultMap();
     }
@@ -43,6 +49,10 @@ class MapManager {
         
         // Calculate visible tiles
         this.calculateVisibleTiles();
+        
+        // Clear cache on new map
+        this.tileCache.clear();
+        this.lastCameraPosition = { x: -1, y: -1 };
     }
 
     // Calculate which tiles are visible on screen
@@ -68,6 +78,9 @@ class MapManager {
             return false;
         }
         this.mapData[y][x] = tileType;
+        
+        // Clear cache when map changes
+        this.tileCache.clear();
         return true;
     }
 
@@ -82,15 +95,40 @@ class MapManager {
         }
     }
 
-    // Render map tiles to the renderer
+    // Check if camera position has changed significantly
+    hasCameraMoved(cameraX, cameraY) {
+        const tileX = Math.floor(cameraX / this.tileWidth);
+        const tileY = Math.floor(cameraY / this.tileHeight);
+        
+        return tileX !== this.lastCameraPosition.x || tileY !== this.lastCameraPosition.y;
+    }
+
+    // Render map tiles to the renderer with performance optimization
     renderMap(renderer, cameraX = 0, cameraY = 0) {
+        const currentTime = performance.now();
+        
+        // Check if we need to re-render the map
+        const hasMoved = this.hasCameraMoved(cameraX, cameraY);
+        const timeSinceLastRender = currentTime - this.lastRenderTime;
+        
+        // Only re-render if camera moved significantly or enough time has passed
+        if (!hasMoved && timeSinceLastRender < this.renderInterval) {
+            return; // Skip rendering
+        }
+        
+        // Update camera position and render time
+        const tileX = Math.floor(cameraX / this.tileWidth);
+        const tileY = Math.floor(cameraY / this.tileHeight);
+        this.lastCameraPosition = { x: tileX, y: tileY };
+        this.lastRenderTime = currentTime;
+        
         // Calculate visible area
-        const startX = Math.max(0, Math.floor(cameraX / this.tileWidth));
-        const startY = Math.max(0, Math.floor(cameraY / this.tileHeight));
+        const startX = Math.max(0, tileX);
+        const startY = Math.max(0, tileY);
         const endX = Math.min(this.mapWidth, startX + this.visibleTiles.width);
         const endY = Math.min(this.mapHeight, startY + this.visibleTiles.height);
 
-        // Render visible tiles
+        // Render visible tiles with caching
         for (let y = startY; y < endY; y++) {
             for (let x = startX; x < endX; x++) {
                 const tileType = this.getTile(x, y);
@@ -147,6 +185,8 @@ class MapManager {
         }
         
         this.calculateVisibleTiles();
+        this.tileCache.clear();
+        this.lastCameraPosition = { x: -1, y: -1 };
     }
 
     // Load map from data
@@ -160,6 +200,8 @@ class MapManager {
         this.mapData = mapData;
         
         this.calculateVisibleTiles();
+        this.tileCache.clear();
+        this.lastCameraPosition = { x: -1, y: -1 };
         return true;
     }
 

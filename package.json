@@ -5,7 +5,9 @@
   "scripts": {
     "gen": "node generate.js",
     "start": "node start.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "monitor": "node performance-monitor.js",
+    "perf-test": "node performance-test.js"
   },
   "dependencies": {
     "sharp": "^0.34.3",
