@@ -131,14 +131,36 @@ class ImprovedFrameBuffer {
 function renderDiff(current, previous, term) {
     let changes = 0;
     
+    // Set cursor to block style, disable blinking, and hide cursor during rendering
+    term('\x1b[2 q\x1b[?12l\x1b[?25l');
+    
+    // Group changes by row to minimize cursor movements
+    const changesByRow = {};
+    
     for (const [key, cell] of current.getEntries()) {
         const [x, y] = key.split(',').map(Number);
         const prev = previous.getCell(x, y);
 
         if (!prev || prev.char !== cell.char || prev.ansi !== cell.ansi) {
-            term.moveTo(x + 1, y + 1);
-            term(cell.ansi + cell.char + '\x1b[0m');
+            if (!changesByRow[y]) {
+                changesByRow[y] = [];
+            }
+            changesByRow[y].push({ x, cell });
             changes++;
+        }
+    }
+    
+    // Render changes row by row to minimize cursor movements
+    for (const [rowY, rowChanges] of Object.entries(changesByRow)) {
+        const y = parseInt(rowY);
+        
+        // Sort changes in this row by x position
+        rowChanges.sort((a, b) => a.x - b.x);
+        
+        // Use terminal-kit's moveTo for each change in the row
+        for (const change of rowChanges) {
+            term.moveTo(change.x + 1, y + 1);
+            term(change.cell.ansi + change.cell.char + '\x1b[0m');
         }
     }
     
