@@ -33,6 +33,7 @@ class GameLoop {
 
     // Start the game loop
     start() {
+        this.terminalRenderer.clearScreen();
         this.isRunning = true;
         this.lastFrameTime = Date.now();
         this.gameLoop();
