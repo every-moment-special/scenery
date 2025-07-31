@@ -312,8 +312,6 @@ module.exports = characterData;
         fs.writeFileSync(outputPath, characterCode);
         
         console.log(`Character data saved to: ${outputPath}`);
-        console.log(`Generated ${characterData.length} cells optimized for new buffer system`);
-        console.log('Format works efficiently with Buffer.setCell()');
     }
 }
 

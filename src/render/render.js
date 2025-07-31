@@ -76,7 +76,11 @@ class Render {
         const uiText = `Position: (${info.x}, ${info.y}) | Direction: ${info.direction.toUpperCase()} | Frame: ${info.frame} | Moving: ${info.isMoving ? 'Yes' : 'No'} | NPCs: ${info.npcCount || 0}`;
         this.renderText(0, uiY, uiText, '', 100);
         
-        const controlsText = 'Use arrow keys to move, Q to quit';
+        // Add map information if available
+        let controlsText = 'Use arrow keys to move, Q to quit';
+        if (info.mapStats) {
+            controlsText = `Map: ${info.mapStats.width}x${info.mapStats.height} | Grass: ${info.mapStats.grassTiles} | ${controlsText}`;
+        }
         this.renderText(0, uiY + 1, controlsText, '', 100);
     }
 

@@ -6,6 +6,7 @@ const TerminalRender = require('../render/terminal');
 const Render = require('../render/render');
 const MovementController = require('../controllers/movement-controller');
 const { NPCManager } = require('./npc-manager');
+const MapManager = require('./map-manager');
 
 class GameLoop {
     constructor() {
@@ -16,6 +17,7 @@ class GameLoop {
         this.renderer = this.bufferedRenderer;
         this.movementController = new MovementController(this.animationManager, this.renderer);
         this.npcManager = new NPCManager();
+        this.mapManager = new MapManager();
         
         // Game state
         this.isRunning = false;
@@ -114,6 +116,9 @@ class GameLoop {
         // Clear all previous positions
         this.clearAllEntityPositions(entities);
         
+        // Render map tiles first (background layer)
+        this.mapManager.renderMap(this.renderer, position.x, position.y);
+        
         // Render entities in z-order (background to foreground)
         entities.forEach((entity, index) => {
             const zIndex = index + 1; // z-index 1, 2, 3, etc.
@@ -132,7 +137,8 @@ class GameLoop {
             direction: animationInfo.direction,
             frame: animationInfo.frame,
             isMoving: animationInfo.isMoving,
-            npcCount: this.npcManager.getNPCCount()
+            npcCount: this.npcManager.getNPCCount(),
+            mapStats: this.mapManager.getMapStats()
         });
         
         // Render the buffer to terminal
@@ -172,6 +178,7 @@ class GameLoop {
             animation: this.animationManager.getAnimationInfo(),
             movement: this.movementController.getMovementInfo(),
             terminal: this.renderer.getTerminalInfo(),
+            map: this.mapManager.getMapStats(),
             npcs: this.npcManager.getAllNPCs().map(npc => ({
                 id: npc.id,
                 type: npc.type,
@@ -187,6 +194,7 @@ class GameLoop {
         this.animationManager.reset();
         this.movementController.reset();
         this.npcManager.clear();
+        this.mapManager.initializeDefaultMap();
         this.initializeNPCs();
         this.bufferedRenderer.clear();
         this.bufferedRenderer.render();
