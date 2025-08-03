@@ -232,4 +232,4 @@ class MapManager {
     }
 }
 
-module.exports = MapManager; 
+module.exports = MapManager;

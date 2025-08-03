@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "main": "start.js",
   "scripts": {
-    "gen": "node generate.js",
-    "start": "node start.js",
-    "test": "node test.js",
-    "monitor": "node performance-monitor.js",
-    "perf-test": "node performance-test.js"
+    "gen": "node --inspect generate.js",
+    "start": "node --inspect start.js",
+    "test": "node --inspect test.js",
+    "monitor": "node --inspect performance-monitor.js",
+    "perf-test": "node --inspect performance-test.js"
   },
   "dependencies": {
     "sharp": "^0.34.3",
